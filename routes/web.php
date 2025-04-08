@@ -7,8 +7,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// test connection to the Car Key API
-Route::get('/car-key/test', [CarKeyController::class, 'testConnection']);
+Route::get('/car-key/token-status', [CarKeyController::class, 'tokenTimeLeft']);
 
-// sanity check test
-// Route::get('/simple-test', function() {return 'Simple test works!';});
