@@ -9,3 +9,5 @@ Route::get('/', function () {
 
 Route::get('/car-key/token-status', [CarKeyController::class, 'tokenTimeLeft']);
 
+Route::get('/car-key/coords', [CarKeyController::class, 'getCoordsInfo']);
+    // ->middleware('auth:api'); // Ensure this route is protected by the API token

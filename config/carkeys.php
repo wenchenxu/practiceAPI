@@ -7,6 +7,9 @@ return [
         'endpoints' => [
             // 'auth' => env('CAR_KEY_API_AUTH_URL'),
             'token' => env('CAR_KEY_API_TOKEN_ENDPOINT'), 
+            'keyControl' => env('CAR_KEY_API_LOCK_ENDPOINT'),
+            'keyCoordinates' => env('CAR_KEY_API_COORDINATE_ENDPOINT'),
+            'keyInfo' => env('CAR_KEY_API_INFO_ENDPOINT'),
             'clientId' => env('CAR_KEY_API_CLIENT_ID'),
             'tenantId' => env('CAR_KEY_API_TENANT_ID'),
         ],

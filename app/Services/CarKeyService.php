@@ -14,16 +14,18 @@ class CarKeyService
     protected int $timeout = 30;
     protected $tokenExpiry;
     protected $tokenUrl;
-
+    protected $keyControl;
+    protected $keyCoordinates;
+    protected $keyInfo;
     public function __construct()
     {
         $this->config = config('carkeys.api');
         $this->baseUrl = $this->config['base_url'];
         $this->timeout = $this->config['timeout'];
-        $this->tokenUrl = $this->baseUrl . $this->config['endpoints']['token'];  // Concatenate here
-
-        // --- Add this line to log the URL ---
-        Log::debug('Constructed Car Key Token URL: ' . $this->tokenUrl);
+        $this->tokenUrl = $this->baseUrl . $this->config['endpoints']['token']; 
+        $this->keyControl = $this->baseUrl . $this->config['endpoints']['keyControl'];
+        $this->keyCoordinates = $this->baseUrl . $this->config['endpoints']['keyCoordinates'];
+        $this->keyInfo = $this->baseUrl . $this->config['endpoints']['keyInfo'];
 
         if (empty($this->tokenUrl)) {
             throw new \RuntimeException('API token URL not configured');
@@ -174,7 +176,7 @@ class CarKeyService
         return [
             'token_exists' => (bool)Cache::has('car_key_api_token'),
             'expires_at' => $expiry ? $expiry->toDateTimeString() : null,
-            'minutes_remaining' => $expiry ? now()->diffInMinutes($expiry) : null,
+            'time_remaining' => $expiry ? $expiry->diff(now())->format('%h hours %i minutes') : null,
             'is_valid' => !$this->tokenNeedsRefresh()
         ];
     }
@@ -182,5 +184,35 @@ class CarKeyService
     public function tokenIsValid(): bool
     {
         return !$this->tokenNeedsRefresh();
+    }
+
+    public function getCoordinatesData(float $latitude, float $longitude)
+    {
+        $endpointPath = $this->config['endpoints']['keyCoordinates'] ?? '/api/getDeviceAddress'; // Get from config or use a default/hardcoded path
+        $httpMethod = 'post';
+
+        $requestData = [
+            'data' => [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ]
+        ]; 
+        
+        Log::debug("Attempting POST to endpoint: " . $endpointPath . " with data: ", $requestData);
+
+        // Use the existing makeRequest method
+        $response = $this->makeRequest($endpointPath, $requestData, $httpMethod);
+
+        // --- Parse the response based on API Documentation ---
+        // Example 1: If response is like {"devices": ["id1", "id2"]}
+        // return $response['devices'] ?? [];
+
+        // Example 2: If response is like [{"id": "id1", "name": "car1"}, ...]
+        // return array_map(function($device) { return $device['id']; }, $response ?? []);
+
+        // Example 3: If response is just ["id1", "id2"]
+        Log::debug("Received response: ", $response ?? []);
+        return $response ?? [];
+        // --- Adjust parsing based on actual response ---
     }
 }
