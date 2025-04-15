@@ -9,5 +9,9 @@ Route::get('/', function () {
 
 Route::get('/car-key/token-status', [CarKeyController::class, 'tokenTimeLeft']);
 
-Route::get('/car-key/coords', [CarKeyController::class, 'getCoordsInfo']);
-    // ->middleware('auth:api'); // Ensure this route is protected by the API token
+// POST route to handle the API call (ensure this uses POST)
+Route::post('/car-key/coords', [CarKeyController::class, 'postDeviceDataRequest'])->name('car-key.post-coords');
+
+// GET route to display the testing form/page
+Route::get('/car-key-tester', [CarKeyController::class, 'showTesterView'])->name('car-key.show-tester'); 
+// Added name for easier URL generation

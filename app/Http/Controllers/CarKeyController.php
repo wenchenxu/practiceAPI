@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log; 
 use Symfony\Component\HttpFoundation\Response;
-
+use Illuminate\View\View;
 
 class CarKeyController extends Controller
 {
@@ -48,25 +48,48 @@ class CarKeyController extends Controller
         );
     }
 
-    public function getCoordsInfo(Request $request): JsonResponse
+    // --- NEW Method to display the tester view ---
+    /**
+     * Displays the view with the form to test the device coordinate posting.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function showTesterView(): View
+    {
+        // This will look for a file named 'car-key-test.blade.php'
+        // inside the 'resources/views/' directory.
+        return view('car-key-test');
+    }
+    // --- End new method ---
+
+    public function postDeviceDataRequest(Request $request): JsonResponse // Renamed method
     {
         try {
-            // --- Get coordinates from the request ---
-            // Use $request->query() for GET parameters.
-            // Provide default values (e.g., 0) or add validation if needed.
-            $latitude = (float) $request->query('lat', 0); 
-            $longitude = (float) $request->query('lon', 0); 
+            Log::debug('Raw request content:', ['content' => $request->getContent()]);
+            Log::debug('Request headers:', ['headers' => $request->headers->all()]); // Check Content-Type
 
-            // Optional: Add validation here to ensure lat/lon are provided and valid
-            Log::debug("Controller received lat: " . $latitude . ", lon: " . $longitude);
-            
-            // --- Call the service method with the retrieved values ---
-            // *** Double-check 'getCoordinatesData' exactly matches the method name in CarKeyService.php ***
-            $coordinateData = $this->carKeyService->getCoordinatesData($latitude, $longitude);
+            // --- Get deviceId from the request ---
+            $deviceId = $request->json('deviceId'); // Use input() for POST body data
+
+            // Log the retrieved value (or null if not found)
+            Log::debug('Value retrieved for devId using $request->json():', ['deviceId' => $deviceId]);
+
+            // --- Basic Validation: Ensure deviceId is provided ---
+            if (empty($deviceId)) {
+                Log::error('Device ID (devId) is missing from the request.');
+                return response()->json(['error' => 'Missing required device ID.'], Response::HTTP_BAD_REQUEST); // Use :: syntax
+            }
+            // --- End Validation ---
+
+            Log::debug("Controller received devId: " . $deviceId);
+
+            // --- Call the updated service method ---
+            // *** Ensure 'postDeviceData' exactly matches the method name in CarKeyService.php ***
+            $apiResponse = $this->carKeyService->postDeviceData($deviceId); // Pass only deviceId
 
             // Return the response from the service
-            return response()->json(['data' => $coordinateData], Response::HTTP_OK);
-        
+            return response()->json(['data' => $apiResponse], Response::HTTP_OK); // Use :: syntax
+
         } catch (\Exception $e) {
             // Use the existing error handler
             return $this->errorResponse($e);

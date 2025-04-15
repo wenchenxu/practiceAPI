@@ -17,6 +17,7 @@ class CarKeyService
     protected $keyControl;
     protected $keyCoordinates;
     protected $keyInfo;
+    
     public function __construct()
     {
         $this->config = config('carkeys.api');
@@ -33,7 +34,7 @@ class CarKeyService
 
         $this->initializeToken();
     }
-
+    /*
     protected function initializeToken()
     {
         $this->token = Cache::remember('car_key_api_token', $this->getTokenExpiryInSeconds(), function () {
@@ -41,6 +42,28 @@ class CarKeyService
         });
 
         $this->tokenExpiry = Cache::get('car_key_api_token_expiry');
+    }
+    */
+
+    protected function initializeToken()
+    {
+        Log::debug('--- Entered initializeToken ---');
+        $cachedToken = Cache::get('car_key_api_token');
+        Log::debug('initializeToken: Token from cache:', ['token' => $cachedToken ? substr($cachedToken, 0, 10) . '...' : 'null']);
+
+        // This block fetches if cache is empty OR expired (Cache::remember handles expiry)
+        $this->token = Cache::remember('car_key_api_token', $this->getTokenExpiryInSeconds(), function () {
+            Log::debug('initializeToken: Cache empty or expired, calling fetchTokenFromUrl...');
+            // It's crucial fetchTokenFromUrl returns the token if successful
+            $fetchedToken = $this->fetchTokenFromUrl();
+            Log::debug('initializeToken: Token fetched inside Cache::remember:', ['token' => $fetchedToken ? substr($fetchedToken, 0, 10) . '...' : 'null']);
+            return $fetchedToken; // Ensure fetchTokenFromUrl returns the token
+        });
+
+        $this->tokenExpiry = Cache::get('car_key_api_token_expiry'); // Get potentially updated expiry
+        Log::debug('initializeToken: Final token value set:', ['token' => $this->token ? substr($this->token, 0, 10) . '...' : 'null']);
+        Log::debug('initializeToken: Final token expiry set:', ['expiry' => $this->tokenExpiry ? $this->tokenExpiry->toDateTimeString() : 'null']);
+        Log::debug('--- Exiting initializeToken ---');
     }
 
     public function fetchTokenFromUrl()
@@ -80,9 +103,10 @@ class CarKeyService
             throw new \Exception('Failed to fetch token: ' . $e->getMessage(), $e->getCode(), $e);
         }
     }
-
+    /*
     protected function makeRequest(string $endpoint, array $data = [], string $method = 'post', bool $retry = true)
     {
+        
         if ($this->tokenNeedsRefresh()) {
             $this->fetchTokenFromUrl();
         }
@@ -119,6 +143,75 @@ class CarKeyService
             throw new \Exception("Car Key API Request Failed: {$e->getMessage()}", $e->getCode(), $e);
         }
     }
+    */
+
+    protected function makeRequest(string $endpoint, array $data = [], string $method = 'post', bool $retry = true)
+    {
+        Log::debug('--- Entered makeRequest ---');
+
+        if ($this->tokenNeedsRefresh()) {
+            Log::debug('makeRequest: Token needs refresh, attempting fetch...');
+            try {
+                $this->fetchTokenFromUrl();
+            } catch (\Exception $e) {
+                Log::error('makeRequest: Failed to refresh token: ' . $e->getMessage());
+                throw $e;
+            }
+        }
+
+        $currentTokenValue = $this->token; 
+        Log::debug('makeRequest: Token value being sent:', ['token' => $currentTokenValue ? substr($currentTokenValue, 0, 10) . '...' : 'null']);
+
+        // --- Ensure token value exists before proceeding ---
+        if (empty($currentTokenValue)) {
+            Log::error('makeRequest: Attempting to make request but token is empty!');
+            throw new \Exception('API token is missing, cannot make request.');
+        }
+        // --- End check ---
+
+        try {
+            $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
+
+            $response = Http::acceptJson()
+                ->timeout($this->timeout)
+                ->withHeaders([
+                    'api_token' => $currentTokenValue // Send token in the custom 'api_token' header
+                ])
+                ->{$method}($url, $data);
+
+            Log::debug('makeRequest: Raw API status code: ' . $response->status()); // Log status code
+
+            // Important: Check for *your* API's success indicator BEFORE treating as success
+            $responseData = $response->json();
+            if ($response->successful() && isset($responseData['success']) && $responseData['success'] === false) {
+                // Treat as failure even if HTTP status is 2xx based on API's own flag
+                Log::error('makeRequest: API returned 2xx status but success=false flag.', ['response_body' => $responseData]);
+                // Throw an exception based on the API's internal error
+                throw new \Illuminate\Http\Client\RequestException($response->toPsrResponse()); // Create exception from response
+            }
+
+            // If HTTP status is not 2xx, this will throw an exception
+            $response->throw();
+
+            return $response->json();
+
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error("makeRequest: RequestException status=" . ($e->response ? $e->response->status() : 'N/A') . " body=" . ($e->response ? $e->response->body() : 'N/A'));
+
+            // Log details specific to the request exception (includes 4xx/5xx or thrown above)
+            $responseBody = $e->response ? $e->response->body() : 'N/A';
+            $responseStatus = $e->response ? $e->response->status() : 'N/A';
+            Log::error("makeRequest: RequestException status={$responseStatus} body={$responseBody}");
+
+            // No need for specific 401 retry logic here anymore, as the API doesn't seem to use standard 401
+            // Simply re-throw the exception
+            throw new \Exception("makeRequest: API Request Failed: {$e->getMessage()}", $e->getCode(), $e);
+
+        } catch (\Exception $e) {
+            Log::error("makeRequest: General Exception: {$e->getMessage()}");
+            throw new \Exception("makeRequest: General API Request Failed: {$e->getMessage()}", $e->getCode(), $e);
+        }
+    }
 
     protected function tokenNeedsRefresh(): bool
     {
@@ -151,24 +244,6 @@ class CarKeyService
         return $expirySeconds;
     }
 
-    // Commented out for future use.
-    /* 
-    protected function testEndpoint($endpointType, $params = [], $method = 'post')
-    {
-        try {
-            $response = $this->makeRequest($this->config['endpoints'][$endpointType], $params, $method);
-            return [
-                'success' => true,
-                'response' => $response
-            ];
-        } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
-        }
-    } */
-
     public function getTokenStatus()
     {
         $expiry = Cache::get('car_key_api_token_expiry');
@@ -186,31 +261,24 @@ class CarKeyService
         return !$this->tokenNeedsRefresh();
     }
 
-    public function getCoordinatesData(float $latitude, float $longitude)
+    public function postDeviceData(string $deviceId) // Renamed and changed signature
     {
-        $endpointPath = $this->config['endpoints']['keyCoordinates'] ?? '/api/getDeviceAddress'; // Get from config or use a default/hardcoded path
-        $httpMethod = 'post';
+        $endpointPath = $this->config['endpoints']['keyCoordinates'] ?? '/api/getDeviceAddress';
+        // $endpointPath = $this->config['endpoints']['keyInfo'] ?? '/api/allDeviceInfo';
+        $httpMethod = 'post'; // Correctly set to POST
 
+        // --- Construct request data with deviceId ---
         $requestData = [
-            'data' => [
-                'latitude' => $latitude,
-                'longitude' => $longitude,
-            ]
-        ]; 
-        
+            'deviceId' => $deviceId // Send deviceId directly in the body
+        ];
+        // --- End request data construction ---
+
         Log::debug("Attempting POST to endpoint: " . $endpointPath . " with data: ", $requestData);
 
-        // Use the existing makeRequest method
+        // Use the existing makeRequest method - this handles the token header
         $response = $this->makeRequest($endpointPath, $requestData, $httpMethod);
 
-        // --- Parse the response based on API Documentation ---
-        // Example 1: If response is like {"devices": ["id1", "id2"]}
-        // return $response['devices'] ?? [];
-
-        // Example 2: If response is like [{"id": "id1", "name": "car1"}, ...]
-        // return array_map(function($device) { return $device['id']; }, $response ?? []);
-
-        // Example 3: If response is just ["id1", "id2"]
+        // --- Parse the response based on actual API Documentation ---
         Log::debug("Received response: ", $response ?? []);
         return $response ?? [];
         // --- Adjust parsing based on actual response ---
