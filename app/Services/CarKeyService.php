@@ -34,16 +34,6 @@ class CarKeyService
 
         $this->initializeToken();
     }
-    /*
-    protected function initializeToken()
-    {
-        $this->token = Cache::remember('car_key_api_token', $this->getTokenExpiryInSeconds(), function () {
-            return $this->fetchTokenFromUrl();
-        });
-
-        $this->tokenExpiry = Cache::get('car_key_api_token_expiry');
-    }
-    */
 
     protected function initializeToken()
     {
@@ -103,47 +93,6 @@ class CarKeyService
             throw new \Exception('Failed to fetch token: ' . $e->getMessage(), $e->getCode(), $e);
         }
     }
-    /*
-    protected function makeRequest(string $endpoint, array $data = [], string $method = 'post', bool $retry = true)
-    {
-        
-        if ($this->tokenNeedsRefresh()) {
-            $this->fetchTokenFromUrl();
-        }
-
-        try {
-            $url = $this->baseUrl . '/' . ltrim($endpoint, '/');
-
-            $response = Http::withToken($this->token)
-                ->timeout($this->timeout)
-                ->{$method}($url, $data);
-
-            $response->throw();
-
-            return $response->json();
-
-        } catch (\Illuminate\Http\Client\RequestException $e) {
-            if ($e->response->status() === 401 && $retry) {
-                $this->fetchTokenFromUrl();
-                return $this->makeRequest($endpoint, $data, $method, false);
-            }
-
-            Log::error("Car Key API Request Error: {$e->getMessage()} for {$url}", [
-                'method' => $method,
-                'data' => $data,
-                'response' => $e->response ? $e->response->body() : null,
-            ]);
-            throw new \Exception("Car Key API Request Failed: {$e->getMessage()}", $e->getCode(), $e);
-
-        } catch (\Exception $e) {
-            Log::error("Car Key API General Error: {$e->getMessage()} for {$url}", [
-                'method' => $method,
-                'data' => $data
-            ]);
-            throw new \Exception("Car Key API Request Failed: {$e->getMessage()}", $e->getCode(), $e);
-        }
-    }
-    */
 
     protected function makeRequest(string $endpoint, array $data = [], string $method = 'post', bool $retry = true)
     {
@@ -215,7 +164,7 @@ class CarKeyService
 
     protected function tokenNeedsRefresh(): bool
     {
-        // --- Add Logging Here ---
+
         $cachedExpiry = Cache::get('car_key_api_token_expiry');
         Log::debug('Retrieved cachedExpiry value: ' . ($cachedExpiry ? $cachedExpiry->toDateTimeString() : 'null') . ' (Type: ' . gettype($cachedExpiry) . ')');
          if ($cachedExpiry && !($cachedExpiry instanceof \Carbon\Carbon)) {
@@ -223,8 +172,7 @@ class CarKeyService
              // Decide how to handle this - maybe force refresh?
              // return true;
          }
-        // --- End Logging ---
-
+        
          // The original logic:
          if (!$cachedExpiry) { // Changed from $this->tokenExpiry to $cachedExpiry
              return true;
