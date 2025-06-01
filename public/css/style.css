@@ -1,0 +1,171 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6; /* Improved readability */
+}
+
+.container {
+    background-color: #fff;
+    padding: 20px 30px; /* Slightly more padding */
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 800px; /* Increased max-width for the index page */
+    margin: 40px auto;
+}
+
+/* Specific container width for edit page if needed, or use the same */
+.container-form { /* You can add this class to the edit page container if you want it narrower */
+    max-width: 600px;
+}
+
+h1, h2 {
+    color: #333;
+    margin-bottom: 0.75em; /* Consistent bottom margin */
+}
+h1 { font-size: 2em; }
+h2 { font-size: 1.5em; margin-top: 1.5em; } /* More top margin for separation */
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Form styling */
+form div {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="password"], /* For future use if needed */
+input[type="email"] {  /* For future use if needed */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%; /* Full width of parent */
+    box-sizing: border-box; /* Important for width calculation */
+}
+input[type="date"],
+select.form-select { /* Using the class we added */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 5px; /* Add some space if label is above */
+    background-color: #fff; /* Ensure select has a background */
+}
+
+/* General button styling */
+.button {
+    padding: 10px 15px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    text-align: center;
+    display: inline-block; /* Allows margin/padding and respects text-align */
+}
+.button-primary {
+    background-color: #007bff; /* Blue for primary actions */
+}
+.button-primary:hover {
+    background-color: #0056b3;
+}
+.button-success { /* Class for Add/Update buttons */
+    background-color: #5cb85c;
+}
+.button-success:hover {
+    background-color: #4cae4c;
+}
+
+.error {
+    color: #d9534f; /* Red color for errors */
+    font-size: 0.9em;
+    margin-top: 5px; /* Space from input */
+    display: block; /* Ensure it takes its own line */
+}
+
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Subtle shadow */
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px; /* Increased padding */
+    text-align: left;
+}
+
+th {
+    background-color: #e9e9e9;
+    font-weight: bold; /* Ensure header text is bold */
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+tr:hover {
+    background-color: #f1f1f1; /* Hover effect for rows */
+}
+
+/* Action button styling */
+.action-link, .action-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 1.2em; /* Make icons a bit larger */
+    display: inline-block; /* For proper alignment and spacing */
+    margin: 0 5px; /* Add a little space around icons */
+}
+
+.action-link-edit { /* Class for the edit link/icon */
+    color: #007bff; /* Blue */
+}
+.action-link-edit:hover {
+    color: #0056b3;
+}
+
+.action-button-delete { /* Class for the delete button/icon */
+    color: #d9534f; /* Red */
+}
+.action-button-delete:hover {
+    color: #c9302c; /* Darker red on hover */
+}
+
+/* Alert/Message Styles */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+/* Add .alert-danger for error messages later if needed */
+
+/* Misc */
+.back-link {
+    display: block;
+    margin-top: 20px;
+    text-align: center;
+}
