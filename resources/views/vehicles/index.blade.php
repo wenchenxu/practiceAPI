@@ -70,6 +70,27 @@
         </div>
     </div>
 
+    {{-- Modal for Editing Vehicle --}}
+    <div id="editVehicleModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center hidden z-40"> {{-- hidden initially, z-index lower than delete modal if needed --}}
+        <div class="relative mx-auto p-8 border w-full max-w-2xl shadow-lg rounded-xl bg-white space-y-6">
+            {{-- Modal Header --}}
+            <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                <h3 class="text-2xl font-semibold text-gray-800">Edit Vehicle</h3>
+                <button id="closeEditModalButton" class="text-gray-400 hover:text-gray-600 transition duration-150 ease-in-out">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            {{-- Modal Body - Form will be included here --}}
+            <div class="mt-5">
+                <form id="editVehicleForm" method="POST" class="space-y-6">
+                    {{-- The content from _edit-form-content.blade.php will be injected here by JS or included if static --}}
+                    {{-- For simplicity now, let's assume we'll include the partial: --}}
+                    @include('vehicles.partials._edit-form-content')
+                </form>
+            </div>
+        </div>
+    </div>
+
     {{-- Delete Confirmation Modal --}}
     <div id="deleteConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center hidden z-50"> {{-- hidden and high z-index --}}
         <div class="relative mx-auto p-6 md:p-8 border w-full max-w-md shadow-xl rounded-xl bg-white space-y-4">
@@ -106,99 +127,153 @@
     </div>
 
     <script>
-        const modal = document.getElementById('addVehicleModal');
-        const openModalButton = document.getElementById('openModalButton');
-        const closeModalButton = document.getElementById('closeModalButton');
+        // This part is fine outside, as Blade renders it before the script runs.
+        const validationErrors = {!! json_encode($errors->getMessages()) !!};
+        const oldInput = {!! json_encode(session()->getOldInput(null)) !!};
+        const oldEditingVehicleId = '{{ old("editing_vehicle_id") }}';
 
-        function showModal() {
-            modal.classList.remove('hidden');
-            // Optional: focus the first input field in the modal
-            // const firstInput = modal.querySelector('input, select');
-            // if (firstInput) {
-            //    firstInput.focus();
-            // }
-        }
+        // --- Wait for the DOM to be fully loaded before trying to find or interact with elements ---
+        document.addEventListener('DOMContentLoaded', function() {
 
-        function hideModal() {
-            modal.classList.add('hidden');
-        }
+            // --- GET ALL MODAL & FORM ELEMENTS ---
+            // Now that the DOM is loaded, these will reliably find the elements.
+            const addModal = document.getElementById('addVehicleModal');
+            const openAddModalButton = document.getElementById('openModalButton');
+            const closeAddModalButton = document.getElementById('closeModalButton');
+            const editModal = document.getElementById('editVehicleModal');
+            const closeEditModalButton = document.getElementById('closeEditModalButton');
+            const cancelEditFormButton = document.getElementById('cancelEditButton');
+            const editVehicleForm = document.getElementById('editVehicleForm');
+            const deleteModal = document.getElementById('deleteConfirmModal');
+            const confirmDeleteButton = document.getElementById('confirmDeleteButton');
+            const cancelDeleteButton = document.getElementById('cancelDeleteButton');
+            const deleteModalMessage = document.getElementById('deleteModalMessage');
+            let formToSubmitForDelete = null;
 
-        openModalButton.addEventListener('click', showModal);
-        closeModalButton.addEventListener('click', hideModal);
-
-        // Close modal if escape key is pressed
-        window.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
-                hideModal();
-            }
-        });
-
-        // Close modal if overlay is clicked (optional, a bit more complex to get right with just the overlay)
-        // modal.addEventListener('click', function(event) {
-        //    if (event.target === modal) { // Ensures click is on overlay itself, not children
-        //        hideModal();
-        //    }
-        // });
-
-        // Logic to re-open modal if there are validation errors from Laravel
-        // $errors->any() checks if there are any errors in the session.
-        // $errors->hasBag('default') is more specific to general form errors.
-        @if($errors->any() && old('form_submitted_from_modal')) // We'll need to add a hidden field to the form
-            showModal();
-        @endif
-
-        // --- New Script for Delete Confirmation Modal ---
-        const deleteModal = document.getElementById('deleteConfirmModal');
-        const confirmDeleteButton = document.getElementById('confirmDeleteButton');
-        const cancelDeleteButton = document.getElementById('cancelDeleteButton');
-        const deleteModalMessage = document.getElementById('deleteModalMessage');
-        let formToSubmit = null; // Variable to store the form that should be submitted
-
-        function showDeleteModal(formId, vehicleInfo) {
-            formToSubmit = document.getElementById(formId);
-            if (vehicleInfo) {
-                deleteModalMessage.textContent = `Are you sure you want to delete vehicle: ${vehicleInfo}? This action cannot be undone.`;
-            } else {
-                deleteModalMessage.textContent = 'Are you sure you want to delete this vehicle? This action cannot be undone.';
-            }
-            if(deleteModal) deleteModal.classList.remove('hidden');
-        }
-
-        function hideDeleteModal() {
-            formToSubmit = null; // Clear the form reference
-            if(deleteModal) deleteModal.classList.add('hidden');
-        }
-
-        // Add event listeners to all delete buttons
-        document.querySelectorAll('.delete-vehicle-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const formId = this.dataset.formId;
-                const vehicleInfo = this.dataset.vehicleInfo;
-                showDeleteModal(formId, vehicleInfo);
-            });
-        });
-
-        if(confirmDeleteButton) {
-            confirmDeleteButton.addEventListener('click', function() {
-                if (formToSubmit) {
-                    formToSubmit.submit();
+            // --- MODAL CONTROL FUNCTIONS ---
+            function showAddModal() { if (addModal) addModal.classList.remove('hidden'); }
+            function hideAddModal() { if (addModal) addModal.classList.add('hidden'); }
+            function showEditModal() { if (editModal) editModal.classList.remove('hidden'); }
+            function hideEditModal() {
+                if (editModal) {
+                    editModal.classList.add('hidden');
+                    document.querySelectorAll('#editVehicleForm [data-error-for]').forEach(el => el.textContent = '');
                 }
-                hideDeleteModal();
+            }
+            function showDeleteModal(formId, vehicleInfo) {
+                formToSubmitForDelete = document.getElementById(formId);
+                if (vehicleInfo) {
+                    deleteModalMessage.textContent = `Are you sure you want to delete vehicle: ${vehicleInfo}? This action cannot be undone.`;
+                } else {
+                    deleteModalMessage.textContent = 'Are you sure you want to delete this vehicle? This action cannot be undone.';
+                }
+                if (deleteModal) deleteModal.classList.remove('hidden');
+            }
+            function hideDeleteModal() {
+                formToSubmitForDelete = null;
+                if (deleteModal) deleteModal.classList.add('hidden');
+            }
+
+            // --- SETUP EVENT LISTENERS ---
+
+            // -- Add Modal Listeners --
+            if(openAddModalButton) openAddModalButton.addEventListener('click', showAddModal);
+            if(closeAddModalButton) closeAddModalButton.addEventListener('click', hideAddModal);
+
+            // -- Edit Modal Listeners --
+            if(closeEditModalButton) closeEditModalButton.addEventListener('click', hideEditModal);
+            if(cancelEditFormButton) cancelEditFormButton.addEventListener('click', hideEditModal);
+            
+            document.querySelectorAll('.open-edit-modal-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    try {
+                        document.querySelectorAll('#editVehicleForm [data-error-for]').forEach(el => el.textContent = '');
+                        const vehicleData = JSON.parse(this.dataset.vehicle);
+                        const updateUrl = this.dataset.updateUrl;
+                        editVehicleForm.action = updateUrl;
+                        document.getElementById('edit_vehicle_id').value = vehicleData.id;
+                        const useOldInput = oldEditingVehicleId && oldEditingVehicleId == vehicleData.id;
+
+                        // --- LOGIC using the new local_string attribute ---
+                        let dateToUse = ''; let hourToUse = ''; let minuteToUse = '';
+
+                        if (useOldInput) {
+                            dateToUse = oldInput.shop_entry_date || '';
+                            hourToUse = oldInput.shop_entry_hour || '';
+                            minuteToUse = oldInput.shop_entry_minute || '';
+                        } 
+                        else if (vehicleData.shop_entry_time_local_string && typeof vehicleData.shop_entry_time_local_string === 'string') {
+                            const parts = vehicleData.shop_entry_time_local_string.split(' ');
+                            dateToUse = parts[0] || '';
+                            const timePart = parts[1] || '';
+                            if (timePart.includes(':')) {
+                                const timeParts = timePart.split(':');
+                                hourToUse = timeParts[0] || '';
+                                minuteToUse = timeParts[1] || '';
+                            }
+                        }
+
+                        document.getElementById('edit_license_number').value = useOldInput ? oldInput.license_number : vehicleData.license_number || '';
+                        document.getElementById('edit_driver_name').value = useOldInput ? oldInput.driver_name : vehicleData.driver_name || '';
+                        document.getElementById('edit_driver_phone_number').value = useOldInput ? oldInput.driver_phone_number : vehicleData.driver_phone_number || '';
+                        document.getElementById('edit_shop_entry_date').value = dateToUse;
+                        document.getElementById('edit_shop_entry_hour').value = hourToUse;
+                        document.getElementById('edit_shop_entry_minute').value = minuteToUse;
+
+                        if (useOldInput) {
+                            for (const field in validationErrors) {
+                                const errorElement = document.querySelector(`#editVehicleForm [data-error-for="${field}"]`);
+                                if (errorElement) { errorElement.textContent = validationErrors[field][0]; }
+                            }
+                        }
+                        showEditModal();
+                    } catch (e) {
+                        console.error('An error occurred inside the edit click handler:', e);
+                    }
+                });
             });
-        }
 
-        if(cancelDeleteButton) {
-            cancelDeleteButton.addEventListener('click', hideDeleteModal);
-        }
-
-        // Optional: Close delete modal if clicking outside of it (on the overlay)
-        if(deleteModal) {
-            deleteModal.addEventListener('click', function(event) {
-                if (event.target === deleteModal) { // Check if the click is on the overlay itself
+            // -- Delete Modal Listeners --
+            document.querySelectorAll('.delete-vehicle-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    showDeleteModal(this.dataset.formId, this.dataset.vehicleInfo);
+                });
+            });
+            if(confirmDeleteButton) {
+                confirmDeleteButton.addEventListener('click', function() {
+                    if (formToSubmitForDelete) formToSubmitForDelete.submit();
                     hideDeleteModal();
+                });
+            }
+            if(cancelDeleteButton) cancelDeleteButton.addEventListener('click', hideDeleteModal);
+
+            // -- Global Listeners --
+            window.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    if(addModal && !addModal.classList.contains('hidden')) hideAddModal();
+                    if(editModal && !editModal.classList.contains('hidden')) hideEditModal();
+                    if(deleteModal && !deleteModal.classList.contains('hidden')) hideDeleteModal();
                 }
             });
-        }
+
+            // --- LOGIC TO RE-OPEN MODALS ON VALIDATION ERROR ---
+            if (oldInput && oldInput.form_submitted_from_modal) {
+                if (oldEditingVehicleId) {
+                    const failedEditButton = document.querySelector(`.open-edit-modal-button[data-update-url*='/${oldEditingVehicleId}']`);
+                    if (failedEditButton) {
+                        failedEditButton.click();
+                    }
+                } else {
+                    document.querySelector('#addVehicleModal [name="license_number"]').value = oldInput.license_number || '';
+                    document.querySelector('#addVehicleModal [name="driver_name"]').value = oldInput.driver_name || '';
+                    document.querySelector('#addVehicleModal [name="driver_phone_number"]').value = oldInput.driver_phone_number || '';
+                    document.querySelector('#addVehicleModal [name="shop_entry_date"]').value = oldInput.shop_entry_date || '';
+                    document.querySelector('#addVehicleModal [name="shop_entry_hour"]').value = oldInput.shop_entry_hour || '';
+                    document.querySelector('#addVehicleModal [name="shop_entry_minute"]').value = oldInput.shop_entry_minute || '';
+                    showAddModal();
+                }
+            }
+        });
     </script>
 
 </body>

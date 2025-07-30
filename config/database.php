@@ -95,6 +95,7 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'timezone' => 'Asia/Shanghai', // added for project wide time zone
         ],
 
         'sqlsrv' => [

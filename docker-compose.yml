@@ -1,0 +1,56 @@
+# docker-compose.yml
+
+# version: '3.8'
+
+services:
+  # The Laravel Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tsf-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - tsf-network
+
+  # The Nginx Web Server Service
+  nginx:
+    image: nginx:alpine
+    container_name: tsf-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80" # Map port 8000 on your PC to port 80 in the container
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - tsf-network
+
+  # The PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: tsf-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - tsf-db-data:/var/lib/postgresql/data
+    ports:
+      - "54321:5432" # Map port 54321 on your PC to port 5432 in the container
+    networks:
+      - tsf-network
+
+networks:
+  tsf-network:
+    driver: bridge
+
+volumes:
+  tsf-db-data:
+    driver: local

@@ -96,8 +96,8 @@ class VehicleController extends Controller
             'driver_phone_number' => 'nullable|string|max:50',
             // New validation rules for shop entry time components
             'shop_entry_date' => 'required|date_format:Y-m-d',
-            'shop_entry_hour' => 'required|integer|between:0,23',
-            'shop_entry_minute' => 'required|integer|in:0,15,30,45',
+            'shop_entry_hour' => 'required|numeric|between:0,23',
+            'shop_entry_minute' => 'required|numeric|in:0,15,30,45',
         ]);
 
         // Prepare data for vehicle update
