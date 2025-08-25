@@ -1,0 +1,11 @@
+.git
+.github
+.env
+.env.example
+node_modules/
+vendor/
+*.log
+docker/*
+storage/framework/
+storage/logs/*.log
+README.md

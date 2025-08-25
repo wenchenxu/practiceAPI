@@ -1,59 +1,54 @@
-# Dockerfile
-
-# Use a specific PHP version with FPM (FastCGI Process Manager) on a lightweight Alpine Linux base
+# Lean single-container image: PHP-FPM + Nginx + Supervisor
 FROM php:8.4-fpm-alpine
 
-# Set the working directory inside the container
-WORKDIR /var/www/html
+# System deps (keep it tight)
+# RUN apk add --no-cache nginx supervisor libpq postgresql-dev libzip-dev \
+#   && docker-php-ext-install pdo pdo_pgsql zip opcache mbstring
 
-# Install system dependencies needed for Laravel
-# We add "apk update" first to get the latest package list.
-# Install system dependencies and temporary build tools in one go
+RUN set -eux; \
+      ver="$(cut -d. -f1,2 /etc/alpine-release)"; \
+    { \
+      echo "https://mirrors.aliyun.com/alpine/v${ver}/main"; \
+      echo "https://mirrors.aliyun.com/alpine/v${ver}/community"; \
+      echo "https://mirror.tuna.tsinghua.edu.cn/alpine/v${ver}/main"; \
+      echo "https://mirror.tuna.tsinghua.edu.cn/alpine/v${ver}/community"; \
+    } > /etc/apk/repositories; \
+    apk update
 
-RUN apk update && apk add --no-cache \
-    # System dependencies needed by Laravel & PHP extensions
-    nginx \
-    supervisor \
-    libzip-dev \
-    zip \
-    postgresql-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    nodejs \
-    npm \
-    # --virtual .build-deps installs these packages as a temporary group
-    && apk add --no-cache --virtual .build-deps \
-    $PHPIZE_DEPS \
-    # Now, configure, install, and enable PHP extensions
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-    gd \
-    zip \
-    pdo \
-    pdo_pgsql \
-    # Finally, clean up the temporary build tools
+RUN --mount=type=cache,target=/var/cache/apk \
+    set -eux; \
+    apk add --update-cache --no-progress \
+        nginx supervisor libpq libzip oniguruma \
+    && apk add --no-cache --virtual .build-deps\
+        $PHPIZE_DEPS postgresql-dev libzip-dev oniguruma-dev \
+    && docker-php-ext-install pdo pdo_pgsql zip opcache mbstring \
     && apk del .build-deps
 
-# Install Composer (PHP package manager)
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# PHP-FPM pool: log to stderr and listen on TCP 127.0.0.1:9000
+RUN sed -i -e 's/;catch_workers_output\s*=.*/catch_workers_output = yes/' /usr/local/etc/php-fpm.d/www.conf \
+  && sed -i -e 's|^listen\s*=.*|listen = 127.0.0.1:9000|' /usr/local/etc/php-fpm.d/www.conf
 
-# Copy existing application code to the container
+# Composer (use official binary)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Install PHP deps with caching: copy composer files first
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || true
+
+# Now copy the rest of the app
 COPY . .
 
-# Install Composer dependencies
-RUN composer install --no-interaction --no-plugins --no-scripts --optimize-autoloader
+# Permissions for Laravel
+RUN mkdir -p storage/framework/{cache/data,sessions,views} bootstrap/cache \
+  && chown -R www-data:www-data storage bootstrap/cache \
+  && find storage bootstrap/cache -type d -exec chmod 775 {} \; \
+  && find storage bootstrap/cache -type f -exec chmod 664 {} \;
 
-# Install NPM dependencies and build front-end assets
-RUN npm install
-RUN npm run build
+# Nginx + Supervisor configs
+COPY docker-config/nginx.conf       /etc/nginx/http.d/default.conf
+COPY docker-config/supervisord.conf /etc/supervisor/supervisord.conf
 
-# Set correct file permissions for Laravel
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-
-# Expose port 9000 to listen for PHP-FPM requests
-EXPOSE 9000
-
-# The command to run when the container starts
-CMD ["php-fpm"]
+EXPOSE 80
+CMD ["/usr/bin/supervisord","-c","/etc/supervisor/supervisord.conf"]

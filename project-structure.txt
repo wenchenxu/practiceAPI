@@ -1,0 +1,85 @@
+.
+├── app
+│   ├── Http
+│   │   └── Controllers
+│   ├── Models
+│   │   ├── User.php
+│   │   └── Vehicle.php
+│   ├── Providers
+│   │   └── AppServiceProvider.php
+│   └── Services
+│       └── CarKeyService.php
+├── artisan
+├── composer.json
+├── composer.lock
+├── config
+│   ├── app.php
+│   ├── auth.php
+│   ├── cache.php
+│   ├── carkeys.php
+│   ├── database.php
+│   ├── filesystems.php
+│   ├── logging.php
+│   ├── mail.php
+│   ├── queue.php
+│   ├── services.php
+│   └── session.php
+├── database
+│   ├── factories
+│   │   └── UserFactory.php
+│   ├── migrations
+│   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   ├── 2025_05_14_034257_create_vehicles_table.php
+│   │   └── 2025_05_30_082353_add_shop_entry_time_to_vehicles_table.php
+│   └── seeders
+│       └── DatabaseSeeder.php
+├── docker
+│   └── nginx
+│       └── default.conf
+├── docker-compose.yml
+├── docker-config
+│   ├── nginx.conf
+│   ├── nginx-supervisor.conf
+│   ├── php-fpm.conf
+│   ├── php-fpm-pool.conf
+│   ├── queue-supervisor.conf
+│   └── supervisord.conf
+├── Dockerfile
+├── Dockerfile.debug
+├── package.json
+├── package-lock.json
+├── phpunit.xml
+├── postcss.config.js
+├── project-structure.txt
+├── public
+│   ├── css
+│   │   └── style.css
+│   ├── favicon.ico
+│   ├── index.php
+│   └── robots.txt
+├── README.md
+├── resources
+│   ├── css
+│   │   └── app.css
+│   ├── js
+│   │   ├── app.js
+│   │   └── bootstrap.js
+│   └── views
+│       ├── car-key-test.blade.php
+│       ├── vehicles
+│       └── welcome.blade.php
+├── routes
+│   ├── console.php
+│   └── web.php
+├── tailwind.config.js
+├── tests
+│   ├── Feature
+│   │   └── ExampleTest.php
+│   ├── TestCase.php
+│   └── Unit
+│       └── ExampleTest.php
+└── vite.config.js
+
+26 directories, 57 files
