@@ -1,41 +1,35 @@
-name: tsf
+version: "3.9"
 
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      # network: host # optional, linux only
-    container_name: tsf-app
-    restart: unless-stopped
+    image: tsf-app:latest          # tag your built image
+    container_name: tsf-app-prod
     ports:
       - "80:80"
-    env_file:
-      - .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
     depends_on:
       db:
         condition: service_healthy
-    # if working in docker
-    #volumes:
-    #  - ./:/var/www/html
 
   db:
     image: postgres:17-alpine
-    container_name: tsf-db
-    restart: unless-stopped
+    container_name: tsf-db-prod
     environment:
       POSTGRES_DB: tsf_management
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
     volumes:
-      - ./:/var/www/html
-      - tsf-db-data:/var/lib/postgresql/data
-      - /opt/tsf-backups:/backups
+      - pgdata_prod:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d tsf_management"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 20
 
 volumes:
-  tsf-db-data:
+  pgdata_prod:
