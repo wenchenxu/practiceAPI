@@ -35,6 +35,7 @@ class AssignDriverToVehicle
             // Create the new active assignment
             return $vehicle->assignments()->create([
                 'driver_id'   => $driver->id,
+                'city_id'     => $vehicle->city_id,
                 'assigned_at' => $when?->toDateTimeString() ?? now(),
                 'notes'       => $notes,
             ]);

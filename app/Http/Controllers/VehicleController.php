@@ -3,56 +3,75 @@
 namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
+use App\Models\User;
+use App\Models\Driver;
 use App\Http\Requests\VehicleStoreRequest;
 use App\Http\Requests\VehicleUpdateRequest;
 
 class VehicleController extends Controller
 {
-    /**
-     * GET /vehicles
-     */
+    protected function authUser(): User
+    {
+        return User::findOrFail(session('user_id'));
+    }
+
     public function index()
     {
-        $vehicles = \App\Models\Vehicle::query()
-        ->with(['currentAssignment.driver'])   // eager-load current driver
-        ->latest('id')
-        ->paginate(20);
+        $user = $this->authUser();
 
-        $drivers = \App\Models\Driver::query()
-            ->orderBy('name')
-            ->get(['id','name','license_number']);
+        $q = Vehicle::query()->with(['currentAssignment.driver'])->latest('id');
+
+        if (!$user->isHQ()) {
+            $q->where('city_id', $user->city_id);
+        }
+
+        $vehicles = $q->paginate(20);
+
+        $driversQ = Driver::query()->orderBy('name');
+        if (!$user->isHQ()) {
+            $driversQ->where('city_id', $user->city_id);
+        }
+        $drivers = $driversQ->get(['id','name','license_number']);
 
         return view('vehicles.index', compact('vehicles', 'drivers'));
     }
 
-    /**
-     * POST /vehicles
-     */
     public function store(VehicleStoreRequest $request)
     {
-        Vehicle::create($request->toVehicleData());
+        $user = $this->authUser();
 
-        // If you submit from a modal on the index page, redirect back there
+        $data = $request->toVehicleData();
+        if (!$user->isHQ()) {
+            $data['city_id'] = $user->city_id;
+        } else {
+            $data['city_id'] = $data['city_id'] ?? null; // HQ may leave null or we can add a select later
+        }
+
+        Vehicle::create($data);
         return redirect()->route('vehicles.index')->with('success', 'Vehicle created.');
     }
 
-    /**
-     * PUT/PATCH /vehicles/{vehicle}
-     */
     public function update(VehicleUpdateRequest $request, Vehicle $vehicle)
     {
-        $vehicle->update($request->toVehicleData());
+        $user = $this->authUser();
 
+        if (!$user->isHQ() && $vehicle->city_id !== $user->city_id) {
+            abort(403, 'You cannot modify vehicles from another city.');
+        }
+
+        $vehicle->update($request->toVehicleData());
         return redirect()->route('vehicles.index')->with('success', 'Vehicle updated.');
     }
 
-    /**
-     * DELETE /vehicles/{vehicle}
-     */
     public function destroy(Vehicle $vehicle)
     {
-        $vehicle->delete();
+        $user = $this->authUser();
 
+        if (!$user->isHQ() && $vehicle->city_id !== $user->city_id) {
+            abort(403, 'You cannot delete vehicles from another city.');
+        }
+
+        $vehicle->delete();
         return redirect()->route('vehicles.index')->with('success', 'Vehicle deleted.');
     }
 }

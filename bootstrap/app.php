@@ -11,7 +11,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Alias our simple session-based auth middleware
+        $middleware->alias([
+            'auth.simple' => \App\Http\Middleware\EnsureAuthenticated::class,
+        ]);
+        
+        // (Optional) Add to web group automatically
+        // $middleware->appendToGroup('web', [
+        //     // e.g. \App\Http\Middleware\SomeGlobalWebMiddleware::class,
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

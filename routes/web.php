@@ -5,31 +5,30 @@ use Illuminate\Http\Response;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AuthController;
 
+// Health
+Route::get('/health', fn () => response()->noContent())->name('health');
 
-// Health (simple infra check)
-Route::get('/health', fn () => response()->noContent());
+// Auth (guest)
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login.form');
+Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Dashboard → vehicles
-Route::redirect('/', '/vehicles');
+// Protected app
+Route::middleware('auth.simple')->group(function () {
+    Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
 
-// vehicles CRUD (you use .store/.update in your partials)
-Route::resource('vehicles', VehicleController::class)->only([
-    'index', 'store', 'update', 'destroy'
-]);
+    Route::redirect('/', '/vehicles');
 
-// drivers CRUD (backend only for now)
-Route::resource('drivers', DriverController::class)->only([
-    'index', 'store', 'update', 'destroy'
-]);
+    Route::resource('vehicles', VehicleController::class)->only([
+        'index', 'store', 'update', 'destroy'
+    ]);
 
-// assignment actions (backend-only endpoints)
-Route::post('/vehicles/{vehicle}/assign', [AssignmentController::class, 'assign'])->name('vehicles.assign');
-Route::post('/vehicles/{vehicle}/release', [AssignmentController::class, 'release'])->name('vehicles.release');
+    Route::resource('drivers', DriverController::class)->only([
+        'index', 'store', 'update', 'destroy'
+    ]);
 
-// (Optional) If you still have create/edit/destroy actions working and want them, keep them. 
-// Otherwise, comment/delete the lines below until you need them.
-// Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
-// Route::get('/vehicles/{vehicle}/edit', [VehicleController::class, 'edit'])->name('vehicles.edit');
-// Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
-// Route::delete('/vehicles/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
+    Route::post('/vehicles/{vehicle}/assign', [AssignmentController::class, 'assign'])->name('vehicles.assign');
+    Route::post('/vehicles/{vehicle}/release', [AssignmentController::class, 'release'])->name('vehicles.release');
+});

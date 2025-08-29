@@ -11,6 +11,24 @@ use Carbon\Carbon;
 
 class AssignmentController extends Controller
 {
+    public function index()
+    {
+        $user = \App\Models\User::findOrFail(session('user_id'));
+
+        $q = \App\Models\Assignment::query()
+            ->with(['vehicle','driver'])
+            ->orderByRaw('released_at IS NULL DESC') // active first
+            ->latest('assigned_at');
+
+        if (!$user->isHQ()) {
+            $q->where('city_id', $user->city_id);
+        }
+
+        $assignments = $q->paginate(20);
+
+        return view('assignments.index', compact('assignments'));
+    }
+    
     public function assign(AssignmentAssignRequest $request, Vehicle $vehicle, AssignDriverToVehicle $service)
     {
         $data = $request->validated();
