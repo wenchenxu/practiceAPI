@@ -2,9 +2,19 @@
 FROM php:8.4-fpm-alpine
 
 # System deps + PHP extensions
-RUN apk add --no-cache nginx supervisor libpq postgresql-dev libzip-dev \
- && docker-php-ext-configure opcache --enable-opcache \
- && docker-php-ext-install pdo pdo_pgsql zip opcache mbstring
+RUN apk add --no-cache \
+      nginx supervisor \
+      libpq postgresql-dev \
+      libzip-dev oniguruma-dev \
+  && docker-php-ext-configure opcache --enable-opcache \
+  && docker-php-ext-install \
+      mbstring \
+      pdo_pgsql \
+      zip \
+      opcache
+
+# ✅ Add composer (copy the binary from the official composer image)
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
 # Workdir
 WORKDIR /var/www/html
@@ -21,7 +31,8 @@ COPY docker-config/nginx.conf       /etc/nginx/http.d/default.conf
 COPY docker-config/supervisord.conf /etc/supervisor/supervisord.conf
 
 # Permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN mkdir -p storage/logs storage/framework/views \
+ && chown -R www-data:www-data storage bootstrap/cache
 
 # Expose Nginx port
 EXPOSE 80
