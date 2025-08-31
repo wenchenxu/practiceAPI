@@ -11,8 +11,16 @@ return new class extends Migration {
             $table->string('username', 50)->unique();
             $table->string('password'); // Hash::make(...)
             $table->enum('role', ['hq', 'city_manager'])->default('city_manager');
-            $table->foreignId('city_id')->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete();
+
+            // IMPORTANT: create the column but DO NOT add a foreign key here,
+            // because 'cities' doesn't exist yet when this migration runs.
+            // $table->foreignId('city_id')->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete();
+            $table->unsignedBigInteger('city_id')->nullable();
+
             $table->timestamps();
+            
+            // You may add an index if you like:
+            $table->index('city_id');
         });
     }
     public function down(): void {
