@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\AssignmentAssignRequest;
 use App\Http\Requests\AssignmentReleaseRequest;
 use App\Models\Driver;
 use App\Models\Vehicle;
+use App\Models\Assignment;
 use App\Services\AssignDriverToVehicle;
 use Carbon\Carbon;
 
@@ -13,10 +15,12 @@ class AssignmentController extends Controller
 {
     public function index()
     {
-        $user = \App\Models\User::findOrFail(session('user_id'));
+        $this->authorize('viewAny', \App\Models\Assignment::class);
+
+        $user = \Illuminate\Support\Facades\Auth::user();
 
         $q = \App\Models\Assignment::query()
-            ->with(['vehicle','driver'])
+            ->with(['vehicl.city','driver.city'])
             ->orderByRaw('released_at IS NULL DESC') // active first
             ->latest('assigned_at');
 
@@ -31,6 +35,8 @@ class AssignmentController extends Controller
     
     public function assign(\App\Http\Requests\AssignmentAssignRequest $request, \App\Models\Vehicle $vehicle, \App\Services\AssignDriverToVehicle $service)
     {
+        $this->authorize('create', \App\Models\Assignment::class);
+
         $user = \App\Models\User::findOrFail(session('user_id'));
 
         $data = $request->validated();
@@ -54,6 +60,8 @@ class AssignmentController extends Controller
 
     public function release(AssignmentReleaseRequest $request, Vehicle $vehicle)
     {
+        $this->authorize('update', \App\Models\Assignment::class);
+
         $data = $request->validated();
 
         $when = (!empty($data['released_at'])) ? Carbon::parse($data['released_at']) : null;

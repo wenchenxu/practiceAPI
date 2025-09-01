@@ -22,6 +22,11 @@ class Driver extends Model
     ];
 
     // Relationships
+    public function city()
+    {
+        return $this->belongsTo(City::class);
+    }
+
     public function assignments()
     {
         return $this->hasMany(Assignment::class);

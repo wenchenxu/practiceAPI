@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\DriverStoreRequest;
 use App\Http\Requests\DriverUpdateRequest;
 use App\Models\Driver;
@@ -12,14 +13,18 @@ class DriverController extends Controller
 
     protected function authUser(): User
     {
-        return User::findOrFail(session('user_id'));
+        /** @var User $u */
+        $u = Auth::user();
+        return $u;
     }
 
     public function index()
     {
+        $this->authorize('viewAny', \App\Models\Driver::class);
+
         $user = $this->authUser();
 
-        $q = Driver::query()->latest('id');
+        $q = \App\Models\Driver::query()->with('city')->latest('id');
         if (!$user->isHQ()) {
             $q->where('city_id', $user->city_id);
         }
@@ -30,6 +35,8 @@ class DriverController extends Controller
 
     public function store(DriverStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Driver::class);
+
         $user = $this->authUser();
 
         $data = $request->validated();
@@ -41,6 +48,8 @@ class DriverController extends Controller
 
     public function update(DriverUpdateRequest $request, Driver $driver)
     {
+        $this->authorize('update', $driver);
+
         $user = $this->authUser();
 
         if (!$user->isHQ() && $driver->city_id !== $user->city_id) {
@@ -53,6 +62,8 @@ class DriverController extends Controller
 
     public function destroy(Driver $driver)
     {
+        $this->authorize('delete', $driver);
+
         $user = $this->authUser();
 
         if (!$user->isHQ() && $driver->city_id !== $user->city_id) {

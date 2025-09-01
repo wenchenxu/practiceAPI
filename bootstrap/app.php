@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         //     // e.g. \App\Http\Middleware\SomeGlobalWebMiddleware::class,
         // ]);
     })
+    ->withProviders([
+        \App\Providers\AuthServiceProvider::class,
+    ])
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

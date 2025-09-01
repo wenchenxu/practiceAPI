@@ -9,6 +9,7 @@
       <th style="width:80px;">ID</th>
       <th style="width:220px;">Name</th>
       <th style="width:160px;">License</th>
+      <th style="width:160px;">City</th>
       <th style="width:140px;">Phone</th>
       <th style="width:140px;">Status</th>
       <th>Actions</th>
@@ -20,10 +21,12 @@
       <td>#{{ $driver->id }}</td>
       <td>{{ $driver->name }}</td>
       <td>{{ $driver->license_number }}</td>
+      <td>{{ $driver->city?->name ?? '—' }}</td>
       <td>{{ $driver->phone ?? '—' }}</td>
       <td>{{ $driver->status }}</td>
       <td class="row">
         {{-- Edit inline (minimal) --}}
+        @can('update', $driver)
         <form action="{{ route('drivers.update', $driver) }}" method="POST" class="row" style="gap:6px;">
           @csrf
           @method('PUT')
@@ -37,12 +40,16 @@
           </select>
           <button class="btn" type="submit">Save</button>
         </form>
+        @endcan
 
+        @can('delete', $driver)
+        {{-- Delete --}}
         <form action="{{ route('drivers.destroy', $driver) }}" method="POST" onsubmit="return confirm('Delete driver?');">
           @csrf
           @method('DELETE')
           <button class="btn warn" type="submit">Delete</button>
         </form>
+        @endcan
       </td>
     </tr>
   @empty
@@ -53,6 +60,7 @@
 
 {{-- Create new (minimal form) --}}
 <h3 style="margin-top:18px;">Create Driver</h3>
+@can('create', \App\Models\Driver::class)
 <form action="{{ route('drivers.store') }}" method="POST" class="row" style="gap:10px;">
   @csrf
   <input type="text" name="name" placeholder="Name" required />
@@ -66,6 +74,7 @@
   </select>
   <button class="btn primary" type="submit">Add</button>
 </form>
+@endcan
 
 <div style="margin-top:12px;">
   {{ $drivers->links() }}

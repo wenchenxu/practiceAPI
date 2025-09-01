@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -26,6 +27,7 @@ class AuthController extends Controller
             return back()->withErrors(['username' => 'Invalid credentials.'])->withInput();
         }
 
+        Auth::login($user);
         $request->session()->put('user_id', $user->id);
 
         return redirect()->route('vehicles.index');
@@ -33,7 +35,8 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->session()->forget('user_id');
+        Auth::logout();
+        // $request->session()->forget('user_id');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

@@ -5,15 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use App\Models\City;
+use App\Models\Assignment;
 
 class Vehicle extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'city_id',
         'license_number',
-        'driver_name',
-        'driver_phone_number',
+        'driver_name',          // legacy/display only
+        'driver_phone_number',  // legacy/display only
         'shop_entry_time',
     ];
 
@@ -31,6 +34,11 @@ class Vehicle extends Model
     }
 
     // Relationships
+    public function city()
+    {
+        return $this->belongsTo(City::class);
+    }
+
     public function assignments()
     {
         return $this->hasMany(Assignment::class);

@@ -35,7 +35,7 @@
 
     <div style="margin-top:20px; font-size:12px; color:#9ca3af;">
       @php
-        $authUser = \App\Models\User::find(session('user_id'));
+        $authUser = \Illuminate\Support\Facades\Auth::user();
       @endphp
       @if($authUser)
         <div>Logged in: <strong>{{ $authUser->username }}</strong></div>

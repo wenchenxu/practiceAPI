@@ -8,6 +8,7 @@
     <tr>
       <th style="width:80px;">ID</th>
       <th style="width:180px;">Vehicle</th>
+      <th style="width:140px;">Vehicle City</th>
       <th style="width:220px;">Driver</th>
       <th style="width:180px;">Assigned At</th>
       <th style="width:180px;">Released At</th>
@@ -19,6 +20,7 @@
     <tr>
       <td>#{{ $a->id }}</td>
       <td>{{ $a->vehicle?->license_number ?? '—' }}</td>
+      <td>{{ $a->vehicle?->city?->name ?? '—' }}</td>
       <td>{{ $a->driver?->name ?? '—' }} {{ $a->driver ? '(' . $a->driver->license_number . ')' : '' }}</td>
       <td>{{ optional($a->assigned_at)->format('Y-m-d H:i') }}</td>
       <td>{{ optional($a->released_at)->format('Y-m-d H:i') ?? '—' }}</td>

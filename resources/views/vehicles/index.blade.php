@@ -8,6 +8,7 @@
     <tr>
       <th style="width: 120px;">ID</th>
       <th style="width: 180px;">License</th>
+      <th style="width: 160px;">City</th>
       <th>Current Driver</th>
       <th style="width: 420px;">Assign Driver</th>
       <th style="width: 220px;">Release</th>
@@ -22,6 +23,7 @@
     <tr>
       <td>#{{ $vehicle->id }}</td>
       <td>{{ $vehicle->license_number }}</td>
+      <td>{{ $vehicle->city?->name ?? '—' }}</td>
       <td>
         @if ($currentDriver)
           <div>
@@ -39,6 +41,7 @@
       {{-- Assign form (only when unassigned) --}}
       <td>
         @if (!$currentDriver)
+          @can('create', \App\Models\Assignment::class)
           <form class="row" action="{{ route('vehicles.assign', $vehicle) }}" method="POST">
             @csrf
             <div>
@@ -60,6 +63,7 @@
             </div>
             <button class="btn primary" type="submit">Assign</button>
           </form>
+          @endcan
         @else
           <em>N/A</em>
         @endif
@@ -68,6 +72,7 @@
       {{-- Release form (only when assigned) --}}
       <td>
         @if ($currentDriver)
+          @can('update', \App\Models\Assignment::class)
           <form class="row" action="{{ route('vehicles.release', $vehicle) }}" method="POST">
             @csrf
             <div>
@@ -76,6 +81,7 @@
             </div>
             <button class="btn warn" type="submit">Release</button>
           </form>
+          @endcan
         @else
           <em>N/A</em>
         @endif

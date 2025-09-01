@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use App\Models\Vehicle;
 use App\Models\User;
 use App\Models\Driver;
@@ -12,14 +13,18 @@ class VehicleController extends Controller
 {
     protected function authUser(): User
     {
-        return User::findOrFail(session('user_id'));
+        /** @var User $u */
+        $u = Auth::user();
+        return $u;
     }
 
     public function index()
     {
+        $this->authorize('viewAny', \App\Models\Vehicle::class);
+
         $user = $this->authUser();
 
-        $q = Vehicle::query()->with(['currentAssignment.driver'])->latest('id');
+        $q = \App\Models\Vehicle::query()->with(['city','currentAssignment.driver'])->latest('id');
 
         if (!$user->isHQ()) {
             $q->where('city_id', $user->city_id);
@@ -38,6 +43,8 @@ class VehicleController extends Controller
 
     public function store(VehicleStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Vehicle::class);
+
         $user = $this->authUser();
 
         $data = $request->toVehicleData();
@@ -53,6 +60,8 @@ class VehicleController extends Controller
 
     public function update(VehicleUpdateRequest $request, Vehicle $vehicle)
     {
+        $this->authorize('update', $vehicle);
+
         $user = $this->authUser();
 
         if (!$user->isHQ() && $vehicle->city_id !== $user->city_id) {
@@ -65,6 +74,8 @@ class VehicleController extends Controller
 
     public function destroy(Vehicle $vehicle)
     {
+        $this->authorize('delete', $vehicle);
+
         $user = $this->authUser();
 
         if (!$user->isHQ() && $vehicle->city_id !== $user->city_id) {

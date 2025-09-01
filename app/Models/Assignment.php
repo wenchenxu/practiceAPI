@@ -22,6 +22,11 @@ class Assignment extends Model
         'released_at' => 'datetime',
     ];
 
+    public function city()
+    { 
+        return $this->belongsTo(City::class); 
+    }
+
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);

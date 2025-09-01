@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureAuthenticated
@@ -16,7 +17,7 @@ class EnsureAuthenticated
     
     public function handle(Request $request, Closure $next)
     {
-        if (!$request->session()->has('user_id')) {
+        if (!Auth::check()) {
             return redirect()->route('login.form');
         }
         return $next($request);
