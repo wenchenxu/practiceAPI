@@ -1,11 +1,22 @@
+# Git & GH
 .git
 .github
+.gitignore
+
+# Env (never send secrets into build context)
 .env
-.env.example
+.env.*
+!.env.example
+!.env.prod.example
+
+# Big folders not needed for image build (we run composer/npm inside the image)
 node_modules/
 vendor/
+
+# Logs & caches
 *.log
-docker/*
 storage/framework/
-storage/logs/*.log
+storage/logs/
+
+# Docs / misc
 README.md

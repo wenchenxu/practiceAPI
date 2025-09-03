@@ -1,29 +1,43 @@
+# VCS / IDE
 .git
-/.phpunit.cache
+/.idea
+/.vscode
+/.fleet
+/.nova
+/.zed
+
+# Node / build
 /node_modules
 /public/build
 /public/hot
-/public/storage
-/storage/*.key
+
+# Storage (keep .gitignore placeholders that Laravel adds)
+storage/*.key
 /storage/pail
-storage/logs
-storage/framework/cache
-storage/framework/sessions
-storage/framework/views
+/storage/logs
+/storage/framework/cache
+/storage/framework/sessions
+/storage/framework/views
+/public/storage
+
+# Vendor & Composer caches
 /vendor
+/composer.phar
+.phpunit.result.cache
+/.phpunit.cache
+
+# Env & auth
 .env
 .env.*
-project-structure.txt
-*.zip
-.phpactor.json
-.phpunit.result.cache
+/auth.json
+
+# Local tooling / misc
 Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
-/auth.json
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
+
+# Your extras
+project-structure.txt
+*.zip
+.phpactor.json
