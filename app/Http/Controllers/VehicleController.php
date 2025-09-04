@@ -41,21 +41,27 @@ class VehicleController extends Controller
         return view('vehicles.index', compact('vehicles', 'drivers'));
     }
 
+    // GET /vehicles/create
+    public function create()
+    {
+        $this->authorize('create', Vehicle::class);
+        return view('vehicles.create');
+    }
+
     public function store(VehicleStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\Vehicle::class);
-
-        $user = $this->authUser();
+        $this->authorize('create', Vehicle::class);
 
         $data = $request->toVehicleData();
-        if (!$user->isHQ()) {
-            $data['city_id'] = $user->city_id;
-        } else {
-            $data['city_id'] = $data['city_id'] ?? null; // HQ may leave null or we can add a select later
-        }
+
+        // Always scope to the manager's city; HQ can't create anyway by policy
+        $data['city_id'] = Auth::user()->city_id;
 
         Vehicle::create($data);
-        return redirect()->route('vehicles.index')->with('success', 'Vehicle created.');
+
+        return redirect()
+            ->route('vehicles.index')
+            ->with('success', 'Vehicle created'); // 
     }
 
     public function update(VehicleUpdateRequest $request, Vehicle $vehicle)

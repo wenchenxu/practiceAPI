@@ -22,7 +22,8 @@ class VehiclePolicy
     // Create (HQ is read-only by your requirement)
     public function create(User $user): bool
     {
-        return !$user->isHQ();
+        // return !$user->isHQ();
+        return $user->role === 'city_manager';
     }
 
     // Update (HQ is read-only)

@@ -33,17 +33,26 @@ class DriverController extends Controller
         return view('drivers.index', compact('drivers'));
     }
 
-    public function store(DriverStoreRequest $request)
+    public function store(\Illuminate\Http\Request $request)
     {
-        $this->authorize('create', \App\Models\Driver::class);
+        $data = $request->validate([
+            'name'           => ['required','string','max:255'],
+            'phone'          => ['nullable','string','max:50'],
+            'license_number' => ['nullable','string','max:100'],
+        ]);
 
-        $user = $this->authUser();
+        $user = Auth::user();
 
-        $data = $request->validated();
-        $data['city_id'] = $user->isHQ() ? ($data['city_id'] ?? null) : $user->city_id;
+        $driver = \App\Models\Driver::create([
+            'name'           => $data['name'],
+            'phone'          => $data['phone'] ?? null,
+            'license_number' => $data['license_number'] ?? null,
+            'city_id'        => $user->city_id,       // ⬅️ scope to manager’s city
+        ]);
 
-        Driver::create($data);
-        return redirect()->route('drivers.index')->with('success', 'Driver created.');
+        return redirect()
+            ->route('drivers.index')
+            ->with('status', 'Driver created');
     }
 
     public function update(DriverUpdateRequest $request, Driver $driver)

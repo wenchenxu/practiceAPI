@@ -19,6 +19,14 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected app
 Route::middleware('auth.simple')->group(function () {
+
+    // Vehicles CRUD (now includes create + store)
+    Route::resource('vehicles', VehicleController::class)
+        ->only(['index','create','store','show','edit','update','destroy']);
+
+    // Route::get('/vehicles/create', [VehicleController::class, 'create'])->name('vehicles.create');
+    // Route::post('/vehicles',        [VehicleController::class, 'store'])->name('vehicles.store');
+    
     Route::get('/assignments', [AssignmentController::class, 'index'])->name('assignments.index');
 
     Route::redirect('/', '/vehicles');
