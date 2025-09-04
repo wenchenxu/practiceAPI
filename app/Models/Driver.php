@@ -14,6 +14,7 @@ class Driver extends Model
         'phone',
         'license_number',
         'license_expiry',
+        'city_id',
         'status',
     ];
 

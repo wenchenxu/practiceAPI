@@ -1,3 +1,5 @@
+name: v1-prod
+
 services:
   app:
     build:
@@ -6,13 +8,15 @@ services:
     image: tsf-app:latest          # tag your built image
     container_name: tsf-app-prod
     ports:
-      - "80:80"
-    environment:
-      APP_ENV: production
-      APP_DEBUG: "false"
+      - "80:80"                    # map host port 80 to container port 80, or only expose behind your LB
+    env_file:
+      - .env.prod
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - appnet
+    # (no bind mount in prod; image has your code built in)
 
   db:
     image: postgres:17-alpine
@@ -20,7 +24,7 @@ services:
     environment:
       POSTGRES_DB: tsf_management
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: secret  # ONLY for superuser; app uses app_user
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
     healthcheck:
@@ -28,6 +32,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    networks:
+      - appnet
 
 volumes:
   pgdata_prod:
+
+networks:
+  appnet:
+    driver: bridge

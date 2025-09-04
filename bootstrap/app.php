@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,12 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Alias our simple session-based auth middleware
         $middleware->alias([
             'auth.simple' => \App\Http\Middleware\EnsureAuthenticated::class,
+            'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         ]);
-        
-        // (Optional) Add to web group automatically
-        // $middleware->appendToGroup('web', [
-        //     // e.g. \App\Http\Middleware\SomeGlobalWebMiddleware::class,
-        // ]);
+        // remove RateLimiter::for(...) from here
     })
     ->withProviders([
         \App\Providers\AuthServiceProvider::class,

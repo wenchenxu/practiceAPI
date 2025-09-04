@@ -28,6 +28,10 @@ class AuthController extends Controller
         }
 
         Auth::login($user);
+        $user->forceFill([
+            'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
+        ])->save();
         $request->session()->put('user_id', $user->id);
 
         return redirect()->route('vehicles.index');

@@ -5,37 +5,46 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # network: host # optional, linux only
+      args:
+        HTTP_PROXY: ""
+        HTTPS_PROXY: ""
+        http_proxy: ""
+        https_proxy: ""
+        ALL_PROXY: ""
+        all_proxy: ""
     container_name: tsf-app
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "80:80"                # http://127.0.0.1
     env_file:
-      - .env
+      - .env                   # LOCAL env
+    volumes:
+      - ./:/var/www/html       # live code mount for dev
     depends_on:
       db:
         condition: service_healthy
-    # if working in docker
-    #volumes:
-    #  - ./:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   db:
-    image: postgres:17-alpine
+    image: postgres:17
     container_name: tsf-db
-    restart: unless-stopped
     environment:
       POSTGRES_DB: tsf_management
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"            # allow pgAdmin/psql from host
     volumes:
-      - ./:/var/www/html
       - tsf-db-data:/var/lib/postgresql/data
-      - /opt/tsf-backups:/backups
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d tsf_management"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 20
 
 volumes:
   tsf-db-data:

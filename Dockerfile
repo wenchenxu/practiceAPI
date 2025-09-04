@@ -1,41 +1,55 @@
-# Example base — adjust if you’re already using a specific image
-FROM php:8.4-fpm-alpine
+# Base image: Ubuntu 24.04 (Noble) based PHP image
+FROM php:8.4-fpm AS base
 
-# System deps + PHP extensions
-RUN apk add --no-cache \
-      nginx supervisor \
-      libpq postgresql-dev \
-      libzip-dev oniguruma-dev \
-  && docker-php-ext-configure opcache --enable-opcache \
-  && docker-php-ext-install \
-      mbstring \
-      pdo_pgsql \
-      zip \
-      opcache
+# ---- neutralize host proxy leaks during build ----
+# Clear common proxy environment variables so apt/curl don't try localhost:7890
+ARG http_proxy=
+ARG https_proxy=
+ARG HTTP_PROXY=
+ARG HTTPS_PROXY=
+ARG all_proxy=
+ARG ALL_PROXY=
+ARG no_proxy=
+ARG NO_PROXY=
+ENV http_proxy= \
+    https_proxy= \
+    HTTP_PROXY= \
+    HTTPS_PROXY= \
+    all_proxy= \
+    ALL_PROXY= \
+    no_proxy= \
+    NO_PROXY=
 
-# ✅ Add composer (copy the binary from the official composer image)
-COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+# Tell apt to never use a proxy (belt & suspenders)
+RUN printf 'Acquire::http::Proxy "false";\nAcquire::https::Proxy "false";\n' \
+    > /etc/apt/apt.conf.d/99noproxy
 
-# Workdir
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# System packages & PHP extensions
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      nginx supervisor curl git unzip bash \
+      libpq-dev libzip-dev libonig-dev \
+ && docker-php-ext-configure opcache --enable-opcache \
+ && docker-php-ext-install -j"$(nproc)" mbstring pdo_pgsql zip opcache \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create runtime dirs
+RUN mkdir -p /var/log/supervisor /var/run/php /var/run/nginx
+
+# Copy configs (adjust paths if yours are different)
+COPY docker-config/nginx.conf /etc/nginx/nginx.conf
+COPY docker-config/conf.d/*.conf /etc/nginx/conf.d/
+COPY docker-config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# App code
 WORKDIR /var/www/html
-
-# Copy app
 COPY . .
 
-# PHP-FPM config (optional, if you have custom pool files)
-# COPY docker-config/php-fpm.conf /usr/local/etc/php-fpm.conf
-# COPY docker-config/php-fpm-pool.conf /usr/local/etc/php-fpm.d/www.conf
+# Expose php-fpm port (for supervisor/nginx inside container)
+EXPOSE 9000
 
-# Nginx and Supervisor configs
-COPY docker-config/nginx.conf       /etc/nginx/http.d/default.conf
-COPY docker-config/supervisord.conf /etc/supervisor/supervisord.conf
-
-# Permissions
-RUN mkdir -p storage/logs storage/framework/views \
- && chown -R www-data:www-data storage bootstrap/cache
-
-# Expose Nginx port
-EXPOSE 80
-
-# Entrypoint via Supervisor (runs php-fpm + nginx)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+# Entrypoint: run both php-fpm and nginx under Supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

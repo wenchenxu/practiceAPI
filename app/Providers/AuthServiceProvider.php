@@ -10,6 +10,10 @@ use App\Policies\DriverPolicy;
 use App\Policies\AssignmentPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -24,6 +28,12 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         // Handy UI toggle (optional)
-        Gate::define('isHQ', fn($user) => $user->role === 'hq');
+        // Gate::define('isHQ', fn($user) => $user->role === 'hq');
+        RateLimiter::for('login', function (Request $request) {
+            $key = 'login:' . strtolower((string) $request->input('username')) . '|' . $request->ip();
+            return [
+                Limit::perMinute(5)->by($key),
+            ];
+        });
     }
 }

@@ -20,6 +20,13 @@ class EnsureAuthenticated
         if (!Auth::check()) {
             return redirect()->route('login.form');
         }
+
+        // Block disabled accounts
+        if (optional(Auth::user())->disabled_at) {
+            Auth::logout();
+            return redirect()->route('login.form')->withErrors(['username' => 'Account disabled.']);
+        }
+        
         return $next($request);
     }
 }

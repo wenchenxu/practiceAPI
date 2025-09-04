@@ -12,7 +12,9 @@ Route::get('/health', fn () => response()->noContent())->name('health');
 
 // Auth (guest)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login.form');
-Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:login')
+    ->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected app
