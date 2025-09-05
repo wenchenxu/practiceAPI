@@ -40,5 +40,6 @@ Route::middleware('auth.simple')->group(function () {
     ]);
 
     Route::post('/vehicles/{vehicle}/assign', [AssignmentController::class, 'assign'])->name('vehicles.assign');
+    
     Route::post('/vehicles/{vehicle}/release', [AssignmentController::class, 'release'])->name('vehicles.release');
 });

@@ -60,14 +60,28 @@ class AssignmentController extends Controller
 
     public function release(AssignmentReleaseRequest $request, Vehicle $vehicle)
     {
-        $this->authorize('update', \App\Models\Assignment::class);
+        // Fetch the active assignment for this vehicle (if any)
+        $assignment = $vehicle->currentAssignment()->first();
+
+        if (!$assignment) {
+            return redirect()->route('vehicles.index')
+                ->with('warning', 'No active assignment found for this vehicle.');
+        }
+
+        // Authorize against the specific assignment model (policy expects User + Assignment)
+        $this->authorize('update', $assignment);
 
         $data = $request->validated();
+        $when = !empty($data['released_at']) ? Carbon::parse($data['released_at']) : null;
 
-        $when = (!empty($data['released_at'])) ? Carbon::parse($data['released_at']) : null;
+        // Guard against a release time earlier than assignment start
+        if ($when && $when->lt($assignment->assigned_at)) {
+            $when = $assignment->assigned_at->copy();
+        }
 
+        // Perform the release (reuse domain method on Vehicle for consistency)
         $vehicle->release($when);
 
-        return redirect()->route('vehicles.index')->with('success', 'Vehicle released from driver.');
+        return redirect()->route('vehicles.index')->with('success', 'Driver released from vehicle.');
     }
 }
