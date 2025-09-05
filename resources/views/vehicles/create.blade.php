@@ -3,7 +3,6 @@
 @section('title', 'Add Vehicle')
 
 @section('content')
-<h1 class="text-xl font-semibold mb-4">Add Vehicle</h1>
 
 <form method="POST" action="{{ route('vehicles.store') }}" class="space-y-4">
   @csrf

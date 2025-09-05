@@ -20,7 +20,7 @@ class AssignmentController extends Controller
         $user = \Illuminate\Support\Facades\Auth::user();
 
         $q = \App\Models\Assignment::query()
-            ->with(['vehicl.city','driver.city'])
+            ->with(['vehicle.city','driver.city'])
             ->orderByRaw('released_at IS NULL DESC') // active first
             ->latest('assigned_at');
 

@@ -5,8 +5,6 @@
 @section('content')
 
 <div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Vehicles</h1>
-
   @can('create', \App\Models\Vehicle::class)
     <a href="{{ route('vehicles.create') }}"
        class="inline-flex items-center px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
@@ -84,7 +82,7 @@
       {{-- Release form (only when assigned) --}}
       <td>
         @if ($currentDriver)
-          @can('update', \App\Models\Assignment::class)
+          @can('update', $assignment)
           <form class="row" action="{{ route('vehicles.release', $vehicle) }}" method="POST">
             @csrf
             <div>

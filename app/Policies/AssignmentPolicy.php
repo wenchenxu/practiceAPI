@@ -20,13 +20,14 @@ class AssignmentPolicy
     // Creating an assignment == "assign"
     public function create(User $user): bool
     {
-        return !$user->isHQ(); // HQ is read-only
+        return $user->role === 'city_manager'; // HQ is read-only
     }
 
     // Updating an assignment (e.g., release) — treat as update
     public function update(User $user, Assignment $assignment): bool
     {
-        return !$user->isHQ() && $assignment->city_id === $user->city_id;
+        return $user->role === 'city_manager'
+            && optional($assignment->vehicle)->city_id === $user->city_id;
     }
 
     public function delete(User $user, Assignment $assignment): bool
